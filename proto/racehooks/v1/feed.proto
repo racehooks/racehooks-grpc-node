@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package racehooks.v1;
+
+// RaceHooks streaming feed delivery over gRPC. See docs/GRPC_STREAMING_SPEC.md.
+//
+// Subscribe is the customer-facing server-streaming RPC: one request, an
+// unbounded stream of feed messages. PushFeed is internal — the stream-gateway
+// forwards each relayed feed message to the grpc-gateway, which fans it out to
+// the matching Subscribe streams.
+service FeedStream {
+  // Customer-facing: subscribe to one or more feeds; receive a stream of
+  // FeedMessage until the client cancels or the server closes for reconnect.
+  rpc Subscribe(SubscribeRequest) returns (stream FeedMessage);
+
+  // Internal: stream-gateway → grpc-gateway relay of one enriched feed message.
+  // Authenticated by the relay secret in metadata (x-racehooks-relay-secret).
+  rpc PushFeed(PushFeedRequest) returns (PushAck);
+}
+
+message SubscribeRequest {
+  // Feed ids to receive, or ["*"] for every feed the caller's tier allows.
+  repeated string feeds = 1;
+  // Optional delivery filters — same semantics as webhook/SSE filters.
+  Filters filters = 2;
+  // Optional resume cursor: last seq the client saw. The gateway replays buffered
+  // messages with seq > resume_from (Phase 2 ring buffer). 0 = fresh subscribe.
+  uint64 resume_from = 3;
+}
+
+message Filters {
+  repeated int32 driver_numbers = 1;
+  repeated string constructors = 2;
+  repeated string event_types = 3;
+}
+
+message FeedMessage {
+  // Feed id, e.g. "timingdata". Control frames use "_reconnect" / "_ping".
+  string feed = 1;
+  string session_id = 2;
+  // ISO-8601 timestamp, mirrors the webhook/SSE payload.
+  string utc = 3;
+  // UTF-8 JSON body — byte-identical to the webhook body after tier stripping.
+  bytes json_payload = 4;
+  // Monotonic per-session sequence, for client-side dedupe and resume.
+  uint64 seq = 5;
+}
+
+message PushFeedRequest {
+  string feed = 1;
+  // "broadcast" (live) or a clientId (scoped Simulate replay).
+  string scope = 2;
+  uint64 seq = 3;
+  // Full enriched payload, UTF-8 JSON — tier stripping happens per subscriber.
+  bytes json_payload = 4;
+}
+
+message PushAck {
+  bool ok = 1;
+}
