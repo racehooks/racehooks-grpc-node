@@ -36,7 +36,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22 # semantic-release v25 + trusted publishing require Node >= 22.14
-          cache: npm
           registry-url: https://registry.npmjs.org
 
       - run: npm install -g npm@latest # trusted publishing requires npm >= 11.5.1
