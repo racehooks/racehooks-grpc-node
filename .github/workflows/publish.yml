@@ -40,7 +40,7 @@ jobs:
           registry-url: https://registry.npmjs.org
 
       - run: npm install -g npm@latest # trusted publishing requires npm >= 11.5.1
-      - run: npm ci
+      - run: npm install # this repo gitignores its lockfile, so npm ci is not usable
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
