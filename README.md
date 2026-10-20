@@ -53,3 +53,7 @@ recycle.
 The client loads the bundled `feed.proto` at runtime via `@grpc/proto-loader`. Generating
 typed stubs with `ts-proto` (no runtime parse, full types) is the planned hardening step;
 the client API is unaffected by that change.
+
+## Documentation
+
+Full docs: https://racehooks.io/docs/sdk
